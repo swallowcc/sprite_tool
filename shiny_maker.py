@@ -62,8 +62,17 @@ HTML = '''<!DOCTYPE html>
                     <input id="valScale" type="range" min="0" max="2" step="0.1" value="1.0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
                 </div>
 
+                <div class="space-y-4">
+                    <div class="flex justify-between text-sm">
+                        <label class="font-medium text-slate-300">5. 染色強度 (Tint Strength)</label>
+                        <span id="tintVal" class="text-blue-400 font-mono">0.0</span>
+                    </div>
+                    <input id="tintStrength" type="range" min="0" max="1" step="0.1" value="0.0" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-pink-500">
+                    <p class="text-[10px] text-slate-500">專門處理灰色/單色怪物。0.0 為原本邏輯，1.0 為強行染色。</p>
+                </div>
+
                 <div class="space-y-2">
-                    <label class="text-sm font-medium text-slate-300">5. 飽和度過濾 (Saturation Mask)</label>
+                    <label class="text-sm font-medium text-slate-300">6. 飽和度過濾 (Saturation Mask)</label>
                     <input id="satMin" type="range" min="0" max="100" value="30" class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-slate-500">
                     <p class="text-[10px] text-slate-500">避免影響灰色/黑色區塊</p>
                 </div>
@@ -85,6 +94,9 @@ HTML = '''<!DOCTYPE html>
         const hueRange = g('hueRange'), satMin = g('satMin'), satScale = g('satScale'), valScale = g('valScale');
         const hueVal = g('hueVal'), satScaleVal = g('satScaleVal'), valScaleVal = g('valScaleVal');
         const preview = g('preview'), placeholder = g('placeholder'), btnDownload = g('btnDownload');
+        // 在 script 標籤開頭增加變數宣告
+        const tintStrength = document.getElementById('tintStrength');
+        const tintVal = document.getElementById('tintVal');
 
         let currentFile = null, timer = null;
 
@@ -95,6 +107,12 @@ HTML = '''<!DOCTYPE html>
         satScale.oninput = () => { satScaleVal.innerText = satScale.value; throttledProcess(); };
         valScale.oninput = () => { valScaleVal.innerText = valScale.value; throttledProcess(); };
         satMin.oninput = () => { throttledProcess(); };
+        
+        // 增加監聽事件
+        tintStrength.oninput = () => { 
+            tintVal.innerText = tintStrength.value; 
+            throttledProcess(); 
+        };
 
         document.getElementById('file').onchange = (e) => {
             currentFile = e.target.files[0];
@@ -110,15 +128,20 @@ HTML = '''<!DOCTYPE html>
             if (!currentFile) return;
             const fd = new FormData();
             fd.append('file', currentFile);
-            fd.append('hue_shift', hueRange.value);
-            fd.append('sat_min', satMin.value);
-            fd.append('sat_scale', satScale.value);
-            fd.append('val_scale', valScale.value);
+            fd.append('hue_shift', document.getElementById('hueRange').value);
+            fd.append('sat_min', document.getElementById('satMin').value);
+            fd.append('sat_scale', document.getElementById('satScale').value);
+            fd.append('val_scale', document.getElementById('valScale').value);
+            
+            // --- 新增這一行 ---
+            fd.append('tint_strength', tintStrength.value); 
 
             try {
+                // 請確保 fetch 的路徑是相對路徑 'process_shiny' (為了 main.py 整合)
                 const r = await fetch('process_shiny', { method: 'POST', body: fd });
                 if (!r.ok) throw new Error('Backend process failed');
                 const blob = await r.blob();
+                
                 if (preview.src) URL.revokeObjectURL(preview.src);
                 preview.src = URL.createObjectURL(blob);
                 preview.classList.remove('hidden');
@@ -160,48 +183,64 @@ async def process_shiny(
     file: UploadFile = File(...),
     hue_shift: int = Form(...),
     sat_min: int = Form(...),
-    sat_scale: float = Form(...), # 新增：飽和度倍率
-    val_scale: float = Form(...)  # 新增：亮度倍率
+    sat_scale: float = Form(...),
+    val_scale: float = Form(...),
+    # 新增參數：染色強度 (0.0 為原本邏輯, 1.0 為完全強制染色)
+    tint_strength: float = Form(0.0) 
 ):
     try:
         data = await file.read()
         nparr = np.frombuffer(data, np.uint8)
         img = cv2.imdecode(nparr, cv2.IMREAD_UNCHANGED)
         
-        if img is None: return JSONResponse(status_code=400, content={"message": "解碼失敗"})
-
-        # 頻道判斷
-        if img.ndim == 2:
-            bgr = cv2.cvtColor(img, cv2.COLOR_GRAY2BGR); alpha = None
-        elif img.shape[2] == 3:
-            bgr = img; alpha = None
+        # 頻道分離 (處理透明度)
+        if img.shape[2] == 4:
+            bgr = img[:, :, :3]
+            alpha = img[:, :, 3]
         else:
-            bgr = img[:, :, :3]; alpha = img[:, :, 3]
+            bgr = img
+            alpha = None
 
+        # --- 針對低飽和度怪物的優化處理 ---
+        if tint_strength > 0:
+            # 1. 將圖片轉為灰階獲取亮度資訊
+            gray = cv2.cvtColor(bgr, cv2.COLOR_BGR2GRAY)
+            
+            # 2. 建立目標顏色 (根據 Hue 決定目標色)
+            # 建立一個單一像素的 HSV，轉回 BGR 獲得目標色
+            target_hsv = np.array([[[hue_shift, 200, 255]]], dtype=np.uint8)
+            target_color = cv2.cvtColor(target_hsv, cv2.COLOR_HSV2BGR)[0][0]
+            
+            # 3. 線性混合：將亮度圖對應到目標顏色
+            # 亮度越高的地方顏色越亮，亮度越低顏色越深
+            tinted = np.zeros_like(bgr, dtype=np.float32)
+            for i in range(3): # B, G, R
+                tinted[:, :, i] = (gray / 255.0) * target_color[i]
+            
+            # 4. 根據強度與原圖混合
+            bgr = cv2.addWeighted(bgr.astype(np.float32), 1 - tint_strength, tinted, tint_strength, 0)
+            bgr = np.clip(bgr, 0, 255).astype(np.uint8)
+
+        # --- 原始 HSV 調整 (對染色後的結果再做 S/V 微調) ---
         hsv = cv2.cvtColor(bgr, cv2.COLOR_BGR2HSV).astype(np.float32)
         h, s, v = cv2.split(hsv)
-
-        # 遮罩邏輯
-        mask = s > (float(sat_min) * 2.55)
-
-        # --- 核心變色邏輯 ---
-        # 1. 色相旋轉
-        h[mask] = (h[mask] + float(hue_shift)) % 180
         
-        # 2. 飽和度調整 (乘法運算並限制範圍 0-255)
-        s[mask] = np.clip(s[mask] * sat_scale, 0, 255)
+        # 僅在 tint_strength 為 0 時旋轉色相，避免衝突
+        if tint_strength == 0:
+            mask = s > (float(sat_min) * 2.55)
+            h[mask] = (h[mask] + float(hue_shift)) % 180
+            
+        s = np.clip(s * sat_scale, 0, 255)
+        v = np.clip(v * val_scale, 0, 255)
         
-        # 3. 亮度調整 (乘法運算並限制範圍 0-255)
-        v[mask] = np.clip(v[mask] * val_scale, 0, 255)
-
-        # 合併與轉換回 BGR
         hsv_new = cv2.merge([h, s, v]).astype(np.uint8)
-        bgr_new = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
+        res_bgr = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
 
+        # 重組 Alpha 並回傳
         if alpha is not None:
-            res = cv2.merge([bgr_new, alpha])
+            res = cv2.merge([res_bgr, alpha])
         else:
-            res = bgr_new
+            res = res_bgr
 
         _, buffer = cv2.imencode('.png', res)
         return StreamingResponse(io.BytesIO(buffer.tobytes()), media_type='image/png')
