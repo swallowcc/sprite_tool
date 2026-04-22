@@ -1,5 +1,7 @@
 # SpriteTool - Game Developer Tool Suite
 
+[English Version](./README_EN.md) | [中文版](./README.md)
+
 一個功能強大的遊戲開發工具套件，提供 Sprite 和圖片編輯的完整解決方案。
 
 ## 🎯 功能概述
