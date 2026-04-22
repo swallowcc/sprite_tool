@@ -38,6 +38,10 @@ HTML = '''<!DOCTYPE html>
                 <input id="wh" type="number" value="96" class="w-full p-2 rounded bg-slate-700 text-white border border-slate-600">
             </div>
             <div class="flex items-center gap-2">
+                <span class="text-sm text-blue-300">Out WH:</span>
+                <input id="outWH" type="number" value="96" class="w-full p-2 rounded bg-slate-700 text-white border border-blue-900">
+            </div>
+            <div class="flex items-center gap-2">
                 <span class="text-sm">Cols:</span>
                 <input id="outCols" type="number" value="10" class="w-full p-2 rounded bg-slate-700 text-white border border-slate-600">
             </div>
@@ -189,6 +193,7 @@ async function exportFile(){
     const fd = new FormData();
     fd.append('file', fileBlob);
     fd.append('outCols', n('outCols'));
+    fd.append('outWH', n('outWH')); // 新增這一行
     fd.append('name', document.getElementById('name').value);
     fd.append('picks', JSON.stringify(picks));
 
@@ -222,6 +227,7 @@ def home():
 async def export_picker(
     file: UploadFile = File(...), 
     outCols: int = Form(...), 
+    outWH: int = Form(...), # 新增參數
     name: str = Form(...), 
     picks: str = Form(...)
 ):
@@ -232,31 +238,37 @@ async def export_picker(
     if not pick_list:
         return HTMLResponse('None', status_code=400)
     
-    tw, th = pick_list[0]['w'], pick_list[0]['h']
+    # 輸出尺寸現在統一使用使用者設定的 outWH
+    tw = th = outWH 
     base_name = os.path.splitext(name)[0]
     
-    # 計算總共可以組成幾張完整的圖片 (捨棄餘數)
     num_picks = len(pick_list)
     num_images = num_picks // outCols
     
     if num_images == 0:
         return HTMLResponse('選取數量不足以構成一列', status_code=400)
 
-    # 儲存產出的路徑清單
     generated_files = []
 
     for img_idx in range(num_images):
-        # 建立單張輸出圖 (高度固定為 1 row)
+        # 建立畫布，寬度為 (OutWH * Cols)，高度為 OutWH
         out_img = Image.new('RGBA', (outCols * tw, th), (0, 0, 0, 0))
         
         for col_idx in range(outCols):
             p_idx = img_idx * outCols + col_idx
             p = pick_list[p_idx]
             box = (p['x'], p['y'], p['x'] + p['w'], p['y'] + p['h'])
+            
+            # 1. 裁切原始大小
             tile = img.crop(box)
+            
+            # 2. 強制縮放至目標 OutWH
+            # 使用 Resampling.LANCZOS 保持像素品質，若要保留像素感可用 NEAREST
+            tile = tile.resize((tw, th), Image.Resampling.LANCZOS)
+            
+            # 3. 貼上
             out_img.paste(tile, (col_idx * tw, 0))
         
-        # 存檔
         file_path = os.path.join(OUTPUT_DIR, f"{base_name}_{img_idx+1}.png")
         out_img.save(file_path)
         generated_files.append(file_path)
