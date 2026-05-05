@@ -4,7 +4,7 @@ A powerful suite of game development tools providing a complete solution for Spr
 
 ## 🎯 Feature Overview
 
-SpriteTool is an integrated web application that combines three professional-grade tools into one:
+SpriteTool is an integrated web application that combines four professional-grade tools into one:
 
 ### 📏 Grid Tool
 Used to define regular grid areas on an image and perform batch selections.
@@ -53,6 +53,20 @@ Professional-grade "shiny" variant adjustment using HSV color space.
 
 ---
 
+### 🔄 Sprite Flipper
+Quickly perform horizontal flipping (mirroring) for each animation cell in a Sprite Sheet.
+
+**Key Features:**
+- Precisely split cells based on configured row and column counts.
+- Batch horizontal flip for all cells.
+- Real-time preview of both original and result images.
+- Preserves Alpha transparency channel.
+- One-click download of the complete flipped Sprite Sheet.
+
+**Use Cases:** Creating mirrored animations, symmetrical Tilemap variants, character action adjustments.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -81,6 +95,7 @@ Visit the home page to see all available tools, or access them directly:
 - **Grid Tool**: `http://localhost:8000/grid/`
 - **Sprite Picker**: `http://localhost:8000/picker/`
 - **Shiny Maker**: `http://localhost:8000/shiny/`
+- **Sprite Flipper**: `http://localhost:8000/flipper/`
 
 ---
 
@@ -92,6 +107,8 @@ SpriteTool/
 ├── sprite_tool_fullstack.py         # Grid Tool sub-app
 ├── sprite_webtool.py                # Sprite Picker sub-app
 ├── shiny_maker.py                   # Shiny Monster Maker sub-app
+├── rotate_webtool.py                # Sprite Flipper sub-app
+├── rotate.py                        # Flipper core processing logic
 ├── output/                          # Grid Tool export directory
 ├── shiny_output/                    # Shiny Maker export directory
 └── README.md                        # This file
@@ -133,6 +150,14 @@ SpriteTool/
 3. **Real-time Preview** - View the effect instantly on the right.
 4. **Download** - Click "Download" once satisfied.
 
+### Sprite Flipper Workflow
+
+1. **Upload Image** - Select the Sprite Sheet to flip.
+2. **Set Partition** - Enter the row and column counts (Cols/Rows).
+3. **Execute Flip** - Click the button to process each cell automatically.
+4. **Check Result** - View the flipped preview image below.
+5. **Download** - Click the download button to get the result.
+
 ---
 
 ## 🛠️ Technical Architecture
@@ -172,6 +197,10 @@ SpriteTool/
 - `GET /shiny/` - Home page.
 - `POST /shiny/process` - Process shiny adjustment.
 - `GET /shiny/download` - Download result.
+
+### Sprite Flipper
+- `GET /flipper/` - Home page.
+- `POST /flipper/flip` - Execute sprite flipping process.
 
 ---
 
@@ -232,5 +261,5 @@ Issues and Pull Requests are welcome!
 
 ---
 
-**Last Updated**: April 2026  
-**Version**: 1.0.0
+**Last Updated**: May 2026  
+**Version**: 1.1.0

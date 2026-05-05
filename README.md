@@ -6,7 +6,7 @@
 
 ## 🎯 功能概述
 
-SpriteTool 是一個整合式的 Web 應用程式，集合了三個專業級工具於一身：
+SpriteTool 是一個整合式的 Web 應用程式，集合了四個專業級工具於一身：
 
 ### 📏 Grid Tool（網格工具）
 用於在圖片上定義規則的網格區域並進行批量選取。
@@ -55,6 +55,20 @@ SpriteTool 是一個整合式的 Web 應用程式，集合了三個專業級工�
 
 ---
 
+### 🔄 Sprite Flipper（精靈翻轉工具）
+快速對 Sprite Sheet 中的每個動作格進行水平翻轉（左右鏡像）。
+
+**功能特性：**
+- 根據設定的行列數精確分割格子
+- 批量水平翻轉所有 Cell
+- 支援即時原圖與結果預覽
+- 保持 Alpha 透明頻道
+- 一鍵下載翻轉後的完整 Sprite Sheet
+
+**使用場景：** 動畫鏡像製作、Tilemap 對稱變體生成、角色動作調整
+
+---
+
 ## 🚀 快速開始
 
 ### 環境需求
@@ -83,6 +97,7 @@ python tool.py
 - **Grid Tool**: `http://localhost:8000/grid/`
 - **Sprite Picker**: `http://localhost:8000/picker/`
 - **Shiny Maker**: `http://localhost:8000/shiny/`
+- **Sprite Flipper**: `http://localhost:8000/flipper/`
 
 ---
 
@@ -94,6 +109,8 @@ SpriteTool/
 ├── sprite_tool_fullstack.py         # Grid Tool 子應用
 ├── sprite_webtool.py                # Sprite Picker 子應用
 ├── shiny_maker.py                   # Shiny Monster Maker 子應用
+├── rotate_webtool.py                # Sprite Flipper 子應用
+├── rotate.py                        # Flipper 核心處理邏輯
 ├── output/                          # Grid Tool 導出目錄
 ├── shiny_output/                    # Shiny Maker 導出目錄
 └── README.md                        # 本文件
@@ -135,6 +152,14 @@ SpriteTool/
 3. **實時預覽** - 右側即時顯示效果
 4. **下載** - 滿意後點擊「下載」按鈕
 
+### Sprite Flipper 工作流
+
+1. **上傳圖片** - 選擇要翻轉的 Sprite Sheet
+2. **設定分割** - 輸入圖片對應的行列數（Cols/Rows）
+3. **執行翻轉** - 點擊執行按鈕，系統將自動處理每個格子
+4. **檢查結果** - 下方會顯示翻轉後的預覽圖
+5. **下載** - 點擊下載按鈕取得成品
+
 ---
 
 ## 🛠️ 技術架構
@@ -174,6 +199,10 @@ SpriteTool/
 - `GET /shiny/` - 首頁
 - `POST /shiny/process` - 處理色違調整
 - `GET /shiny/download` - 下載成品
+
+### Sprite Flipper
+- `GET /flipper/` - 首頁
+- `POST /flipper/flip` - 執行精靈翻轉處理
 
 ---
 
@@ -234,5 +263,5 @@ SpriteTool/
 
 ---
 
-**最後更新**: 2026 年 4 月  
-**版本**: 1.0.0
+**最後更新**: 2026 年 5 月  
+**版本**: 1.1.0
