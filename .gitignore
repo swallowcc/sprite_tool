@@ -22,3 +22,6 @@ wheels/
 .venv
 env/
 venv/
+output/
+shiny_output/
+sprite_output/
