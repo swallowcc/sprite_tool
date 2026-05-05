@@ -8,6 +8,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 from sprite_tool_fullstack import app as grid_app
 from sprite_webtool import app as picker_app
 from shiny_maker import app as shiny_app
+from rotate_webtool import app as flipper_app
 
 app = FastAPI(title="Game Dev Suite")
 
@@ -19,6 +20,7 @@ NAVBAR_HTML = """
     <a href="/grid/" class="text-sm text-slate-300 hover:text-blue-400 transition">📏 Grid Tool</a>
     <a href="/picker/" class="text-sm text-slate-300 hover:text-blue-400 transition">🎯 Picker Tool</a>
     <a href="/shiny/" class="text-sm text-slate-300 hover:text-blue-400 transition">✨ Shiny Maker</a>
+    <a href="/flipper/" class="text-sm text-slate-300 hover:text-blue-400 transition">🔄 Flipper</a>
 </nav>
 """
 
@@ -52,6 +54,7 @@ app.add_middleware(NavbarMiddleware)
 app.mount("/grid", grid_app)
 app.mount("/picker", picker_app)
 app.mount("/shiny", shiny_app)
+app.mount("/flipper", flipper_app)
 
 # 首頁入口
 @app.get("/", response_class=HTMLResponse)
@@ -68,10 +71,11 @@ async def index():
         <div class="flex flex-col items-center justify-center min-h-[80vh] space-y-6">
             <h1 class="text-4xl font-bold text-blue-400">Game Developer Tool Suite</h1>
             <p class="text-slate-400">請從上方導覽列選擇要使用的工具</p>
-            <div class="grid grid-cols-3 gap-6 pt-10">
-                <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center">📏 Grid Tool</div>
-                <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center">🎯 Picker Tool</div>
-                <div class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center">✨ Shiny Maker</div>
+            <div class="grid grid-cols-4 gap-6 pt-10">
+                <a href="/grid/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">📏 Grid Tool</a>
+                <a href="/picker/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">🎯 Picker Tool</a>
+                <a href="/shiny/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">✨ Shiny Maker</a>
+                <a href="/flipper/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">🔄 Flipper</a>
             </div>
         </div>
     </body>
