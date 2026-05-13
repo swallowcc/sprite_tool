@@ -19,13 +19,14 @@ HTML = '''<!DOCTYPE html>
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-900 text-white p-6">
-<div class="max-w-4xl mx-auto space-y-6">
+<body class="bg-slate-900 text-white">
+<div class="max-w-7xl mx-auto space-y-6 p-6 pt-20">
+    <header class="border-b border-slate-700 pb-2">
+        <h1 class="text-xl font-bold">🔄 Flipper</h1>
+        <p class="text-slate-400 text-sm mt-2">將 Sprite Sheet 中每個格子水平翻轉（左右鏡像），並輸出新圖片</p>
+    </header>
 
     <div class="bg-slate-800 p-6 rounded-2xl border border-slate-700">
-        <h1 class="text-2xl font-bold text-blue-400 mb-1">🔄 Sprite Flipper</h1>
-        <p class="text-slate-400 text-sm mb-6">將 Sprite Sheet 中每個格子水平翻轉（左右鏡像），並輸出新圖片。</p>
-
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
             <div>
                 <label class="block text-xs text-slate-400 mb-1">Columns（列數）</label>

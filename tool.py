@@ -31,12 +31,8 @@ NAVBAR_HTML = """
 class NavbarMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         response = await call_next(request)
-        
-        # 排除首頁，避免重複注入
-        if request.url.path == "/":
-            return response
 
-        # 針對所有子工具的 HTML 回傳進行注入
+        # 針對所有 HTML 回傳進行注入
         if "text/html" in response.headers.get("content-type", ""):
             body = b""
             async for chunk in response.body_iterator:
@@ -73,8 +69,7 @@ async def index():
         <script src="https://cdn.tailwindcss.com"></script>
     </head>
     <body class="bg-slate-900 text-white">
-        {NAVBAR_HTML}
-        <div class="flex flex-col items-center justify-center min-h-[80vh] space-y-6">
+        <div class="flex flex-col items-center justify-center min-h-[80vh] space-y-6 pt-20">
             <h1 class="text-4xl font-bold text-blue-400">Game Developer Tool Suite</h1>
             <p class="text-slate-400">請從上方導覽列選擇要使用的工具</p>
             <div class="grid grid-cols-4 gap-6 pt-10">

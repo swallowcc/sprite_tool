@@ -21,10 +21,15 @@ HTML = '''<!DOCTYPE html>
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-900 text-white p-4">
-<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-3 gap-4">
+<body class="bg-slate-900 text-white">
+<div class="max-w-7xl mx-auto p-4 pt-20 space-y-6">
+    <header class="border-b border-slate-700 pb-2">
+        <h1 class="text-xl font-bold">📏 Grid Tool</h1>
+        <p class="text-slate-400 text-sm mt-2">定義網格區域，批量選取多個 Tile 範圍</p>
+    </header>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
     <div class="bg-slate-800 p-4 rounded-2xl space-y-2">
-        <h1 class="text-xl font-bold">Sprite Tool Suite</h1>
         <div class="bg-blue-900/50 p-3 rounded-lg border border-blue-700/50">
             <p class="text-sm font-semibold text-blue-200">Total Tiles: <span id="totalCount" class="text-xl text-white">0</span></p>
         </div>

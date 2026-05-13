@@ -22,11 +22,15 @@ HTML = '''<!DOCTYPE html>
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-900 text-white p-4">
-<div class="max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-4 gap-4">
+<body class="bg-slate-900 text-white">
+<div class="max-w-7xl mx-auto p-4 pt-20 space-y-6">
+    <header class="border-b border-slate-700 pb-2">
+        <h1 class="text-xl font-bold">🎯 Picker Tool</h1>
+        <p class="text-slate-400 text-sm mt-2">選取並導出單一 Sprite，支援調整尺寸與排列</p>
+    </header>
+    
+    <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
     <div class="lg:col-span-1 bg-slate-800 p-4 rounded-2xl space-y-4">
-        <h1 class="text-xl font-bold border-b border-slate-700 pb-2">Sprite Picker</h1>
-        
         <div class="bg-blue-900/30 p-3 rounded-lg border border-blue-700/50">
             <p class="text-xs text-blue-200 mb-1">Total Selected</p>
             <span id="totalCount" class="text-2xl font-bold">0</span>

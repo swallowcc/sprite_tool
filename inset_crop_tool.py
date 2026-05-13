@@ -61,10 +61,13 @@ HTML = """<!DOCTYPE html>
     }
   </style>
 </head>
-<body class="bg-slate-900 text-white min-h-screen p-6">
-<div class="max-w-7xl mx-auto space-y-4">
+<body class="bg-slate-900 text-white">
+<div class="max-w-7xl mx-auto space-y-6 p-6 pt-20">
 
-  <h1 class="text-2xl font-bold border-b border-slate-600 pb-3">Inset Crop Tool</h1>
+  <header class="border-b border-slate-700 pb-2">
+    <h1 class="text-xl font-bold">✂️ Inset Crop</h1>
+    <p class="text-slate-400 text-sm mt-2">移除背景色並內縮邊界，自動切割 Sprite Sheet 為個別方塊</p>
+  </header>
 
   <!-- ── Top: Controls ── -->
   <div class="bg-slate-800 rounded-2xl p-5">
@@ -100,25 +103,15 @@ HTML = """<!DOCTYPE html>
 
       <div class="w-px self-stretch bg-slate-600"></div>
 
-      <!-- 裁切 -->
+      <!-- 預覽底色 -->
       <div class="space-y-1">
-        <p class="text-xs font-semibold text-blue-300">裁切設定</p>
+        <p class="text-xs font-semibold text-cyan-300">預覽底色（檢查用）</p>
         <div class="flex gap-2 items-center">
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Columns</label>
-            <input id="colsInput" type="number" value="4" min="1"
-                   class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">Rows</label>
-            <input id="rowsInput" type="number" value="6" min="1"
-                   class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
-          </div>
-          <div>
-            <label class="block text-xs text-slate-400 mb-1">內縮 (px)</label>
-            <input id="insetInput" type="number" value="2" min="0"
-                   class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
-          </div>
+          <input id="previewColorPicker" type="color" value="#333333"
+                 class="w-10 h-9 rounded cursor-pointer border-0 p-0 bg-transparent">
+          <input id="previewColorHex" type="text" value="#333333" maxlength="7"
+                 class="w-24 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white font-mono text-sm">
+          <span class="text-xs text-slate-400">僅用於檢查，不影響匯出</span>
         </div>
       </div>
 
@@ -141,26 +134,53 @@ HTML = """<!DOCTYPE html>
 
     <div class="bg-slate-800 rounded-2xl p-4 space-y-2">
       <div class="flex items-center justify-between">
-        <p class="text-sm font-semibold text-pink-300">去底色預覽</p>
+        <p class="text-sm font-semibold text-cyan-300">去底色預覽（底色檢查用 + 內縮虛線）</p>
         <span id="previewLoading" class="hidden text-xs text-slate-400 animate-pulse">更新中…</span>
       </div>
-      <div class="checker flex items-center justify-center rounded-lg min-h-80 overflow-auto">
+      <div id="previewBg" class="relative flex items-center justify-center rounded-lg min-h-80 overflow-auto" style="background-color: #333333;">
         <img id="bgImg" class="hidden max-w-full object-contain" style="image-rendering:pixelated">
+        <canvas id="insetCanvas" class="hidden absolute top-0 left-0" style="image-rendering:pixelated;"></canvas>
         <p id="bgPH" class="text-slate-500 text-sm">預覽將在此顯示</p>
       </div>
     </div>
 
   </div>
 
-  <!-- ── Bottom: Download ── -->
-  <div class="bg-slate-800 rounded-2xl p-4 flex items-center gap-4">
-    <button id="downloadBtn" disabled onclick="doProcess()"
-            class="px-10 py-3 bg-blue-600 hover:bg-blue-500
-                   disabled:bg-slate-600 disabled:cursor-not-allowed
-                   rounded-xl font-bold transition text-white">
-      ⬇ 確認並下載 ZIP
-    </button>
-    <div id="status" class="hidden text-sm text-slate-400"></div>
+  <!-- ── Bottom: Crop Settings & Download ── -->
+  <div class="bg-slate-800 rounded-2xl p-4 flex items-center justify-between gap-6">
+    
+    <!-- 左邊：裁切設定 -->
+    <div class="space-y-1">
+      <p class="text-xs font-semibold text-blue-300">裁切設定</p>
+      <div class="flex gap-2 items-center">
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Columns</label>
+          <input id="colsInput" type="number" value="4" min="1"
+                 class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Rows</label>
+          <input id="rowsInput" type="number" value="6" min="1"
+                 class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">內縮 (px)</label>
+          <input id="insetInput" type="number" value="2" min="0"
+                 class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
+        </div>
+      </div>
+    </div>
+
+    <!-- 右邊：下載按鈕 -->
+    <div class="flex flex-col items-center gap-2">
+      <button id="downloadBtn" disabled onclick="doProcess()"
+              class="px-10 py-3 bg-blue-600 hover:bg-blue-500
+                     disabled:bg-slate-600 disabled:cursor-not-allowed
+                     rounded-xl font-bold transition text-white whitespace-nowrap">
+        ⬇ 確認並下載 ZIP
+      </button>
+      <div id="status" class="hidden text-sm text-slate-400"></div>
+    </div>
   </div>
 
 </div>
@@ -175,8 +195,12 @@ const origImg        = document.getElementById('origImg');
 const origPH         = document.getElementById('origPH');
 const bgImg          = document.getElementById('bgImg');
 const bgPH           = document.getElementById('bgPH');
+const insetCanvas    = document.getElementById('insetCanvas');
+const previewBg      = document.getElementById('previewBg');
 const colorPicker    = document.getElementById('colorPicker');
 const colorHex       = document.getElementById('colorHex');
+const previewColorPicker = document.getElementById('previewColorPicker');
+const previewColorHex    = document.getElementById('previewColorHex');
 const threshRange    = document.getElementById('threshRange');
 const threshNum      = document.getElementById('threshNum');
 const threshLabel    = document.getElementById('threshLabel');
@@ -184,6 +208,19 @@ const infoDiv        = document.getElementById('info');
 const statusDiv      = document.getElementById('status');
 const downloadBtn    = document.getElementById('downloadBtn');
 const previewLoading = document.getElementById('previewLoading');
+
+// ── Preview color picker <-> hex ─────────────
+previewColorPicker.addEventListener('input', () => {
+  previewColorHex.value = previewColorPicker.value;
+  previewBg.style.backgroundColor = previewColorPicker.value;
+});
+previewColorHex.addEventListener('change', () => {
+  const v = previewColorHex.value.trim();
+  if (/^#[0-9a-fA-F]{6}$/.test(v)) {
+    previewColorPicker.value = v;
+    previewBg.style.backgroundColor = v;
+  }
+});
 
 // ── Color picker <-> hex ─────────────────────
 colorPicker.addEventListener('input', () => {
@@ -224,7 +261,59 @@ fileInput.addEventListener('change', () => {
 
 origImg.addEventListener('load', updateInfo);
 ['colsInput','rowsInput','insetInput'].forEach(id =>
-  document.getElementById(id).addEventListener('input', updateInfo));
+  document.getElementById(id).addEventListener('input', () => {
+    updateInfo();
+    drawInsetGrid();
+  }));
+
+// ── Draw inset grid on canvas ────────────────
+function drawInsetGrid() {
+  if (!bgImg.naturalWidth || bgImg.classList.contains('hidden')) return;
+  
+  const cols  = +document.getElementById('colsInput').value  || 1;
+  const rows  = +document.getElementById('rowsInput').value  || 1;
+  const inset = +document.getElementById('insetInput').value || 0;
+  
+  const imgW = bgImg.naturalWidth;
+  const imgH = bgImg.naturalHeight;
+  const tileW = Math.floor(imgW / cols);
+  const tileH = Math.floor(imgH / rows);
+  
+  // 設置Canvas的繪製解析度（邏輯像素）
+  insetCanvas.width = imgW;
+  insetCanvas.height = imgH;
+  
+  // 計算bgImg的實際顯示大小
+  const displayW = bgImg.offsetWidth;
+  const displayH = bgImg.offsetHeight;
+  const offsetLeft = bgImg.offsetLeft;
+  const offsetTop = bgImg.offsetTop;
+  
+  // 設置Canvas的CSS顯示大小和位置以匹配bgImg
+  insetCanvas.style.width = displayW + 'px';
+  insetCanvas.style.height = displayH + 'px';
+  insetCanvas.style.left = offsetLeft + 'px';
+  insetCanvas.style.top = offsetTop + 'px';
+  
+  const ctx = insetCanvas.getContext('2d');
+  ctx.clearRect(0, 0, imgW, imgH);
+  ctx.strokeStyle = 'rgba(255, 100, 200, 0.7)'; // 粉紅色虛線
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1.5;
+  
+  // 對每個格子繪製內縮邊界框
+  for (let r = 0; r < rows; r++) {
+    for (let c = 0; c < cols; c++) {
+      const x0 = c * tileW;
+      const y0 = r * tileH;
+      
+      // 繪製內縮矩形框
+      ctx.strokeRect(x0 + inset, y0 + inset, tileW - inset * 2, tileH - inset * 2);
+    }
+  }
+  
+  insetCanvas.classList.remove('hidden');
+}
 
 function updateInfo() {
   if (!currentFile || !origImg.naturalWidth) return;
@@ -266,6 +355,9 @@ async function doPreview() {
     bgImg.src = previewObjectUrl;
     bgImg.classList.remove('hidden');
     bgPH.classList.add('hidden');
+    bgImg.onload = () => {
+      drawInsetGrid();
+    };
   } catch (e) {
     console.error(e);
   } finally {

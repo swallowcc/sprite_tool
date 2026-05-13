@@ -89,6 +89,8 @@ Remove Chroma Key background and perform intelligent inset cropping and enlargem
 **Key Features:**
 - **Color Removal** - Custom chroma key (default #ff00ff pink) and threshold adjustment.
 - **Real-time Preview** - Instantly view background removal effects while adjusting threshold.
+- **Preview Background Customization** - Change preview background color to check edge precision (inspection only, does not affect export).
+- **Inset Guide Lines** - Display dashed lines showing each cell's inset boundary (pink dashed outline) for visual verification of inset effects.
 - **Smart Cropping** - Precisely divide cells based on rows/columns and inset distance.
 - **Enlarge After Crop** - Automatically enlarge back to original cell size after inset cropping.
 - **Batch Export** - Export individual cell PNGs + combined full image.
@@ -273,6 +275,8 @@ SpriteTool/
 ## 🎨 UI/UX Features
 
 - **Dark Theme** - Eye-friendly dark gray color scheme.
+- **Unified Navigation** - Navigation bar is automatically injected into all tool pages via FastAPI middleware.
+- **Standardized Layout** - Consistent wide-screen layout (Max-width 7xl) and header styling across all tools.
 - **Responsive Design** - Optimized for desktop and tablets.
 - **Instant Preview** - Lag-free visual feedback.
 - **Drag-and-Drop Interaction** - Intuitive image manipulation.
@@ -328,4 +332,4 @@ Issues and Pull Requests are welcome!
 ---
 
 **Last Updated**: May 2026  
-**Version**: 1.1.0
+**Version**: 1.2.0

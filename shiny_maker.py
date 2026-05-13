@@ -24,11 +24,11 @@ HTML = '''<!DOCTYPE html>
         ::-webkit-scrollbar-thumb { background: #475569; border-radius: 4px; }
     </style>
 </head>
-<body class="bg-slate-900 text-white p-4">
-    <div class="max-w-4xl mx-auto space-y-6">
-        <header class="border-b border-slate-700 pb-4">
-            <h1 class="text-3xl font-bold text-blue-400">Shiny Monster Maker Pro</h1>
-            <p class="text-slate-400">全維度色違調整工具 (HSV 模式)</p>
+<body class="bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto space-y-6 p-4 pt-20">
+        <header class="border-b border-slate-700 pb-2">
+            <h1 class="text-xl font-bold">✨ Shiny Maker</h1>
+            <p class="text-slate-400 text-sm mt-2">全維度色違調整工具，支援 HSV 色相、飽和度、亮度變化</p>
         </header>
 
         <div class="grid grid-cols-1 md:grid-cols-2 gap-8">

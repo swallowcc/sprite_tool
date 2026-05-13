@@ -14,10 +14,12 @@ HTML = """
     <title>Sprite Merger</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-slate-900 text-white min-h-screen p-8">
-    <div class="max-w-xl mx-auto space-y-6">
-        <h1 class="text-2xl font-bold text-blue-400">🧩 Sprite Merger</h1>
-        <p class="text-slate-400 text-sm">將來源圖片 merge 進主圖的指定 tile 座標</p>
+<body class="bg-slate-900 text-white">
+    <div class="max-w-7xl mx-auto space-y-6 p-8 pt-20">
+        <header class="border-b border-slate-700 pb-2">
+            <h1 class="text-xl font-bold">🧩 Merger</h1>
+            <p class="text-slate-400 text-sm mt-2">將來源圖片 merge 進主圖的指定 tile 座標</p>
+        </header>
 
         <form id="mergeForm" class="space-y-4">
             <div>
