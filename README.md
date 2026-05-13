@@ -69,6 +69,37 @@ SpriteTool 是一個整合式的 Web 應用程式，集合了四個專業級工�
 
 ---
 
+### 🧩 Sprite Merger（精靈合併工具）
+將來源 Sprite 精確合併到主 Sprite Sheet 的指定格位。
+
+**功能特性：**
+- 上傳主圖和來源圖片
+- 設定主圖的行列數，自動計算格子尺寸
+- 指定目標格位座標（Column / Row）
+- 自動對齊並合併來源圖到目標位置
+- 保留透明度和色彩資訊
+- 即時預覽合併結果
+- 一鍵下載完成的圖片
+
+**使用場景：** 角色變體組裝、Tilemap 元素組合、Sprite Sheet 內容更新
+
+---
+
+### ✂️ Inset Crop Tool（內縮裁切工具）
+去除 Chroma Key 底色後，對 Sprite Sheet 進行內縮裁切及放大處理。
+
+**功能特性：**
+- **色彩去除** - 自訂底色（預設 #ff00ff 粉紅色）及去除閾值
+- **即時預覽** - 調整 threshold 時實時顯示去底色效果
+- **智慧裁切** - 根據行列數和內縮距離精確分割每格
+- **縮放還原** - 內縮後自動放大回原格尺寸
+- **批量輸出** - 導出個別格子 PNG + 組合完整圖
+- 支援 ZIP 壓縮打包下載
+
+**使用場景：** Sprite Sheet 去底色處理、像素藝術格式標準化、動畫幀序列優化
+
+---
+
 ## 🚀 快速開始
 
 ### 環境需求
@@ -98,6 +129,8 @@ python tool.py
 - **Sprite Picker**: `http://localhost:8000/picker/`
 - **Shiny Maker**: `http://localhost:8000/shiny/`
 - **Sprite Flipper**: `http://localhost:8000/flipper/`
+- **Sprite Merger**: `http://localhost:8000/merger/`
+- **Inset Crop Tool**: `http://localhost:8000/inset/`
 
 ---
 
@@ -111,8 +144,13 @@ SpriteTool/
 ├── shiny_maker.py                   # Shiny Monster Maker 子應用
 ├── rotate_webtool.py                # Sprite Flipper 子應用
 ├── rotate.py                        # Flipper 核心處理邏輯
+├── sprite_merger.py                 # Sprite Merger 子應用
+├── inset_crop_tool.py               # Inset Crop Tool 子應用
+├── remove_pink_background.py        # 色彩去除工具（獨立使用）
 ├── output/                          # Grid Tool 導出目錄
 ├── shiny_output/                    # Shiny Maker 導出目錄
+└── README.md                        # 本文件
+```
 └── README.md                        # 本文件
 ```
 
@@ -160,6 +198,30 @@ SpriteTool/
 4. **檢查結果** - 下方會顯示翻轉後的預覽圖
 5. **下載** - 點擊下載按鈕取得成品
 
+### Sprite Merger 工作流
+
+1. **上傳圖片** - 選擇主 Sprite Sheet 和來源圖片
+2. **設定主圖網格** - 輸入主圖的行列數
+3. **指定目標位置** - 輸入目標 Column 和 Row 編號（從 0 開始）
+4. **檢查預覽** - 查看合併後的預覽結果
+5. **下載** - 點擊下載按鈕取得合併後的圖片
+
+### Inset Crop Tool 工作流
+
+1. **上傳 Sprite Sheet** - 選擇含有底色的圖片
+2. **調整去底色設定**
+   - 選擇或輸入底色（如 #ff00ff）
+   - 調整 Threshold 閾值，觀察右側實時預覽
+   - 確認去底色效果滿意
+3. **設定裁切參數**
+   - 輸入圖片的行列數（Cols/Rows）
+   - 設定四邊內縮距離（px）
+   - 查看計算的格子尺寸及輸出數量
+4. **確認並下載**
+   - 點擊「確認並下載 ZIP」按鈕
+   - 系統執行去底色 → 內縮裁切 → 放大還原
+   - 下載包含所有格子 PNG + 完整組合圖的 ZIP 檔
+
 ---
 
 ## 🛠️ 技術架構
@@ -203,6 +265,15 @@ SpriteTool/
 ### Sprite Flipper
 - `GET /flipper/` - 首頁
 - `POST /flipper/flip` - 執行精靈翻轉處理
+
+### Sprite Merger
+- `GET /merger/` - 首頁
+- `POST /merger/merge` - 執行精靈合併處理
+
+### Inset Crop Tool
+- `GET /inset/` - 首頁
+- `POST /inset/preview` - 即時預覽去底色效果
+- `POST /inset/process` - 執行去底色 + 裁切 + 打包
 
 ---
 

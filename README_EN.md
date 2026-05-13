@@ -67,6 +67,37 @@ Quickly perform horizontal flipping (mirroring) for each animation cell in a Spr
 
 ---
 
+### 🧩 Sprite Merger
+Precisely merge source Sprite into the target cell of a main Sprite Sheet.
+
+**Key Features:**
+- Upload main image and source sprite.
+- Set main image row/column counts with automatic cell size calculation.
+- Specify target cell coordinates (Column / Row).
+- Automatic alignment and merge of source sprite to target position.
+- Preserves transparency and color information.
+- Real-time preview of merge result.
+- One-click download of completed image.
+
+**Use Cases:** Character variant assembly, Tilemap element composition, Sprite Sheet content updates.
+
+---
+
+### ✂️ Inset Crop Tool
+Remove Chroma Key background and perform intelligent inset cropping and enlargement on Sprite Sheets.
+
+**Key Features:**
+- **Color Removal** - Custom chroma key (default #ff00ff pink) and threshold adjustment.
+- **Real-time Preview** - Instantly view background removal effects while adjusting threshold.
+- **Smart Cropping** - Precisely divide cells based on rows/columns and inset distance.
+- **Enlarge After Crop** - Automatically enlarge back to original cell size after inset cropping.
+- **Batch Export** - Export individual cell PNGs + combined full image.
+- **ZIP Archive** - Download all results in a single ZIP package.
+
+**Use Cases:** Sprite Sheet background removal, pixel art standardization, animation frame sequence optimization.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -96,8 +127,8 @@ Visit the home page to see all available tools, or access them directly:
 - **Sprite Picker**: `http://localhost:8000/picker/`
 - **Shiny Maker**: `http://localhost:8000/shiny/`
 - **Sprite Flipper**: `http://localhost:8000/flipper/`
-
----
+- **Sprite Merger**: `http://localhost:8000/merger/`
+- **Inset Crop Tool**: `http://localhost:8000/inset/`
 
 ## 📂 Project Structure
 
@@ -109,6 +140,9 @@ SpriteTool/
 ├── shiny_maker.py                   # Shiny Monster Maker sub-app
 ├── rotate_webtool.py                # Sprite Flipper sub-app
 ├── rotate.py                        # Flipper core processing logic
+├── sprite_merger.py                 # Sprite Merger sub-app
+├── inset_crop_tool.py               # Inset Crop Tool sub-app
+├── remove_pink_background.py        # Color removal tool (standalone use)
 ├── output/                          # Grid Tool export directory
 ├── shiny_output/                    # Shiny Maker export directory
 └── README.md                        # This file
@@ -158,6 +192,30 @@ SpriteTool/
 4. **Check Result** - View the flipped preview image below.
 5. **Download** - Click the download button to get the result.
 
+### Sprite Merger Workflow
+
+1. **Upload Images** - Select the main Sprite Sheet and source sprite.
+2. **Set Main Grid** - Enter the row and column counts for the main image.
+3. **Specify Target Position** - Enter the target column and row indices (starting from 0).
+4. **Preview Merge** - View the merge result preview.
+5. **Download** - Click the download button to get the merged image.
+
+### Inset Crop Tool Workflow
+
+1. **Upload Sprite Sheet** - Select an image with chroma key background.
+2. **Adjust Background Removal Settings**
+   - Choose or input the background color (e.g., #ff00ff).
+   - Adjust Threshold slider and observe real-time preview on the right.
+   - Confirm the background removal result.
+3. **Configure Crop Parameters**
+   - Enter grid row and column counts (Cols/Rows).
+   - Set inset distance (px) for all edges.
+   - View calculated cell size and output count.
+4. **Confirm and Download**
+   - Click "Confirm and Download ZIP" button.
+   - System executes: Remove background → Inset crop → Enlarge back → Package.
+   - Download ZIP containing all individual cell PNGs + combined image.
+
 ---
 
 ## 🛠️ Technical Architecture
@@ -202,6 +260,14 @@ SpriteTool/
 - `GET /flipper/` - Home page.
 - `POST /flipper/flip` - Execute sprite flipping process.
 
+### Sprite Merger
+- `GET /merger/` - Home page.
+- `POST /merger/merge` - Execute sprite merge process.
+
+### Inset Crop Tool
+- `GET /inset/` - Home page.
+- `POST /inset/preview` - Real-time background removal preview.
+- `POST /inset/process` - Execute background removal + cropping + packaging.
 ---
 
 ## 🎨 UI/UX Features
