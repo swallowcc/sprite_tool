@@ -151,8 +151,6 @@ SpriteTool/
 ├── shiny_output/                    # Shiny Maker 導出目錄
 └── README.md                        # 本文件
 ```
-└── README.md                        # 本文件
-```
 
 ---
 
