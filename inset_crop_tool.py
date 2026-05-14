@@ -147,12 +147,12 @@ HTML = """<!DOCTYPE html>
   </div>
 
   <!-- ── Bottom: Crop Settings & Download ── -->
-  <div class="bg-slate-800 rounded-2xl p-4 flex items-center justify-between gap-6">
+  <div class="bg-slate-800 rounded-2xl p-4">
     
     <!-- 左邊：裁切設定 -->
-    <div class="space-y-1">
+    <div class="flex flex-col items-center gap-2">
       <p class="text-xs font-semibold text-blue-300">裁切設定</p>
-      <div class="flex gap-2 items-center">
+      <div class="flex flex-wrap gap-2 items-end">
         <div>
           <label class="block text-xs text-slate-400 mb-1">Columns</label>
           <input id="colsInput" type="number" value="4" min="1"
@@ -168,11 +168,21 @@ HTML = """<!DOCTYPE html>
           <input id="insetInput" type="number" value="2" min="0"
                  class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
         </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">X 偏移 (px)</label>
+          <input id="offsetXInput" type="number" value="0"
+                 class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
+        </div>
+        <div>
+          <label class="block text-xs text-slate-400 mb-1">Y 偏移 (px)</label>
+          <input id="offsetYInput" type="number" value="0"
+                 class="w-20 p-2 rounded-lg bg-slate-700 border border-slate-600 text-white text-sm">
+        </div>
       </div>
     </div>
 
     <!-- 右邊：下載按鈕 -->
-    <div class="flex flex-col items-center gap-2">
+    <div class="flex flex-col items-center gap-2 mt-4">
       <button id="downloadBtn" disabled onclick="doProcess()"
               class="px-10 py-3 bg-blue-600 hover:bg-blue-500
                      disabled:bg-slate-600 disabled:cursor-not-allowed
@@ -260,7 +270,7 @@ fileInput.addEventListener('change', () => {
 });
 
 origImg.addEventListener('load', updateInfo);
-['colsInput','rowsInput','insetInput'].forEach(id =>
+['colsInput','rowsInput','insetInput','offsetXInput','offsetYInput'].forEach(id =>
   document.getElementById(id).addEventListener('input', () => {
     updateInfo();
     drawInsetGrid();
@@ -270,9 +280,11 @@ origImg.addEventListener('load', updateInfo);
 function drawInsetGrid() {
   if (!bgImg.naturalWidth || bgImg.classList.contains('hidden')) return;
   
-  const cols  = +document.getElementById('colsInput').value  || 1;
-  const rows  = +document.getElementById('rowsInput').value  || 1;
-  const inset = +document.getElementById('insetInput').value || 0;
+  const cols    = +document.getElementById('colsInput').value    || 1;
+  const rows    = +document.getElementById('rowsInput').value    || 1;
+  const inset   = +document.getElementById('insetInput').value   || 0;
+  const offsetX = +document.getElementById('offsetXInput').value || 0;
+  const offsetY = +document.getElementById('offsetYInput').value || 0;
   
   const imgW = bgImg.naturalWidth;
   const imgH = bgImg.naturalHeight;
@@ -304,8 +316,8 @@ function drawInsetGrid() {
   // 對每個格子繪製內縮邊界框
   for (let r = 0; r < rows; r++) {
     for (let c = 0; c < cols; c++) {
-      const x0 = c * tileW;
-      const y0 = r * tileH;
+      const x0 = c * tileW + offsetX;
+      const y0 = r * tileH + offsetY;
       
       // 繪製內縮矩形框
       ctx.strokeRect(x0 + inset, y0 + inset, tileW - inset * 2, tileH - inset * 2);
@@ -379,6 +391,8 @@ async function doProcess() {
   fd.append('cols',      document.getElementById('colsInput').value);
   fd.append('rows',      document.getElementById('rowsInput').value);
   fd.append('inset',     document.getElementById('insetInput').value);
+  fd.append('offset_x',  document.getElementById('offsetXInput').value);
+  fd.append('offset_y',  document.getElementById('offsetYInput').value);
 
   try {
     const resp = await fetch('process', { method: 'POST', body: fd });
@@ -441,6 +455,8 @@ async def process(
     cols: int = Form(...),
     rows: int = Form(...),
     inset: int = Form(...),
+    offset_x: int = Form(0),
+    offset_y: int = Form(0),
 ):
     """去底色 → 內縮裁切 → 打包 ZIP 下載。"""
     raw = await file.read()
@@ -461,7 +477,7 @@ async def process(
     for r in range(rows):
         for c in range(cols):
             x0, y0 = c * tile_w, r * tile_h
-            cropped = src.crop((x0 + inset, y0 + inset, x0 + tile_w - inset, y0 + tile_h - inset))
+            cropped = src.crop((x0 + offset_x + inset, y0 + offset_y + inset, x0 + offset_x + tile_w - inset, y0 + offset_y + tile_h - inset))
             resized = cropped.resize((tile_w, tile_h), Image.NEAREST)
             tiles.append(resized)
 

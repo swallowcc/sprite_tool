@@ -93,12 +93,26 @@ SpriteTool 是一個整合式的 Web 應用程式，集合了四個專業級工�
 - **即時預覽** - 調整 threshold 時實時顯示去底色效果
 - **預覽底色檢查** - 可修改預覽背景顏色以檢查邊界精度（純檢查用，不影響導出）
 - **內縮虛線框** - 在預覽上顯示每個格子的內縮邊界（粉紅色虛線框），視覺化檢查內縮效果
+- **座標偏移** - 支援 X/Y 軸偏移調整，處理不對齊的網格
 - **智慧裁切** - 根據行列數和內縮距離精確分割每格
 - **縮放還原** - 內縮後自動放大回原格尺寸
 - **批量輸出** - 導出個別格子 PNG + 組合完整圖
 - 支援 ZIP 壓縮打包下載
 
 **使用場景：** Sprite Sheet 去底色處理、像素藝術格式標準化、動畫幀序列優化
+
+---
+
+### 📦 Sprite Splitter（精靈分割器）
+最基礎的圖片分割工具，將 Sprite Sheet 按網格切開並打包。
+
+**功能特性：**
+- 根據行列數自動計算格子大小
+- 實時顯示分割線預覽
+- 一鍵將所有格子打包為 ZIP 下載
+- 支援像素藝術縮放顯示（保持銳利）
+
+**使用場景：** 快速拆解素材包、動畫序列導出
 
 ---
 
@@ -133,6 +147,7 @@ python tool.py
 - **Sprite Flipper**: `http://localhost:8000/flipper/`
 - **Sprite Merger**: `http://localhost:8000/merger/`
 - **Inset Crop Tool**: `http://localhost:8000/inset/`
+- **Sprite Splitter**: `http://localhost:8000/splitter/`
 
 ---
 
@@ -148,6 +163,7 @@ SpriteTool/
 ├── rotate.py                        # Flipper 核心處理邏輯
 ├── sprite_merger.py                 # Sprite Merger 子應用
 ├── inset_crop_tool.py               # Inset Crop Tool 子應用
+├── sprite_splitter.py               # Sprite Splitter 子應用
 ├── remove_pink_background.py        # 色彩去除工具（獨立使用）
 ├── output/                          # Grid Tool 導出目錄
 ├── shiny_output/                    # Shiny Maker 導出目錄
@@ -215,12 +231,19 @@ SpriteTool/
    - 確認去底色效果滿意
 3. **設定裁切參數**
    - 輸入圖片的行列數（Cols/Rows）
+   - 調整 **X/Y Offset** 偏移量以對齊網格
    - 設定四邊內縮距離（px）
    - 查看計算的格子尺寸及輸出數量
 4. **確認並下載**
    - 點擊「確認並下載 ZIP」按鈕
    - 系統執行去底色 → 內縮裁切 → 放大還原
    - 下載包含所有格子 PNG + 完整組合圖的 ZIP 檔
+
+### Sprite Splitter 工作流
+
+1. **上傳圖片** - 選擇要分割的 Sprite Sheet
+2. **設定網格** - 輸入行列數，預覽圖會即時顯示藍色分割線
+3. **下載** - 點擊「下載 ZIP」取得所有格子檔案
 
 ---
 
@@ -274,6 +297,10 @@ SpriteTool/
 - `GET /inset/` - 首頁
 - `POST /inset/preview` - 即時預覽去底色效果
 - `POST /inset/process` - 執行去底色 + 裁切 + 打包
+
+### Sprite Splitter
+- `GET /splitter/` - 首頁
+- `POST /splitter/process` - 執行圖片網格分割並打包
 
 ---
 
@@ -337,4 +364,4 @@ SpriteTool/
 ---
 
 **最後更新**: 2026 年 5 月  
-**版本**: 1.2.0
+**版本**: 1.3.0

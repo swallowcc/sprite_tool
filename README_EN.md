@@ -91,12 +91,26 @@ Remove Chroma Key background and perform intelligent inset cropping and enlargem
 - **Real-time Preview** - Instantly view background removal effects while adjusting threshold.
 - **Preview Background Customization** - Change preview background color to check edge precision (inspection only, does not affect export).
 - **Inset Guide Lines** - Display dashed lines showing each cell's inset boundary (pink dashed outline) for visual verification of inset effects.
+- **Coordinate Offset** - Support for X/Y axis offset adjustment to handle misaligned grids.
 - **Smart Cropping** - Precisely divide cells based on rows/columns and inset distance.
 - **Enlarge After Crop** - Automatically enlarge back to original cell size after inset cropping.
 - **Batch Export** - Export individual cell PNGs + combined full image.
 - **ZIP Archive** - Download all results in a single ZIP package.
 
 **Use Cases:** Sprite Sheet background removal, pixel art standardization, animation frame sequence optimization.
+
+---
+
+### 📦 Sprite Splitter
+The simplest tool to split a Sprite Sheet into grid cells and package them into a ZIP file.
+
+**Key Features:**
+- Automatically calculates cell size based on row and column counts.
+- Real-time preview of grid split lines.
+- One-click packaging of all cells into a ZIP archive for download.
+- Pixel-art optimized rendering (maintains sharpness).
+
+**Use Cases:** Quick decomposition of asset packs, animation sequence export.
 
 ---
 
@@ -131,6 +145,7 @@ Visit the home page to see all available tools, or access them directly:
 - **Sprite Flipper**: `http://localhost:8000/flipper/`
 - **Sprite Merger**: `http://localhost:8000/merger/`
 - **Inset Crop Tool**: `http://localhost:8000/inset/`
+- **Sprite Splitter**: `http://localhost:8000/splitter/`
 
 ## 📂 Project Structure
 
@@ -144,6 +159,7 @@ SpriteTool/
 ├── rotate.py                        # Flipper core processing logic
 ├── sprite_merger.py                 # Sprite Merger sub-app
 ├── inset_crop_tool.py               # Inset Crop Tool sub-app
+├── sprite_splitter.py               # Sprite Splitter sub-app
 ├── remove_pink_background.py        # Color removal tool (standalone use)
 ├── output/                          # Grid Tool export directory
 ├── shiny_output/                    # Shiny Maker export directory
@@ -211,12 +227,19 @@ SpriteTool/
    - Confirm the background removal result.
 3. **Configure Crop Parameters**
    - Enter grid row and column counts (Cols/Rows).
+   - Adjust **X/Y Offset** to align the grid correctly.
    - Set inset distance (px) for all edges.
    - View calculated cell size and output count.
 4. **Confirm and Download**
    - Click "Confirm and Download ZIP" button.
    - System executes: Remove background → Inset crop → Enlarge back → Package.
    - Download ZIP containing all individual cell PNGs + combined image.
+
+### Sprite Splitter Workflow
+
+1. **Upload Image** - Select the Sprite Sheet to split.
+2. **Set Grid** - Enter row and column counts; the preview will show blue split lines instantly.
+3. **Download** - Click "Download ZIP" to get all individual cell files.
 
 ---
 
@@ -270,6 +293,10 @@ SpriteTool/
 - `GET /inset/` - Home page.
 - `POST /inset/preview` - Real-time background removal preview.
 - `POST /inset/process` - Execute background removal + cropping + packaging.
+
+### Sprite Splitter
+- `GET /splitter/` - Home page.
+- `POST /splitter/process` - Execute grid splitting and packaging.
 ---
 
 ## 🎨 UI/UX Features
@@ -332,4 +359,4 @@ Issues and Pull Requests are welcome!
 ---
 
 **Last Updated**: May 2026  
-**Version**: 1.2.0
+**Version**: 1.3.0
