@@ -4,7 +4,7 @@ A powerful suite of game development tools providing a complete solution for Spr
 
 ## 🎯 Feature Overview
 
-SpriteTool is an integrated web application that combines four professional-grade tools into one:
+SpriteTool is an integrated web application that combines multiple professional-grade tools into one:
 
 ### 📏 Grid Tool
 Used to define regular grid areas on an image and perform batch selections.
@@ -114,6 +114,22 @@ The simplest tool to split a Sprite Sheet into grid cells and package them into 
 
 ---
 
+### 🗂️ Folder Sprite Builder
+Select a folder, then auto-scale and merge images into a sprite sheet with filename-based ordering.
+
+**Key Features:**
+- Load all images from a selected folder at once.
+- Input Columns and total output width to auto-calculate cell width.
+- Keep aspect ratio while scaling images and center them in each cell.
+- Automatic row wrapping (including incomplete last row).
+- Output order uses natural filename sort (e.g., 1, 2, 10).
+- Files with identical names are stabilized using relative-path tie-break sorting.
+- One-click PNG export and download.
+
+**Use Cases:** Batch asset organization, folder-to-sprite-sheet pipelines, animation atlas packing.
+
+---
+
 ## 🚀 Quick Start
 
 ### Prerequisites
@@ -144,6 +160,7 @@ Visit the home page to see all available tools, or access them directly:
 - **Shiny Maker**: `http://localhost:8000/shiny/`
 - **Sprite Flipper**: `http://localhost:8000/flipper/`
 - **Sprite Merger**: `http://localhost:8000/merger/`
+- **Folder Sprite Builder**: `http://localhost:8000/folder-builder/`
 - **Inset Crop Tool**: `http://localhost:8000/inset/`
 - **Sprite Splitter**: `http://localhost:8000/splitter/`
 
@@ -158,6 +175,7 @@ SpriteTool/
 ├── rotate_webtool.py                # Sprite Flipper sub-app
 ├── rotate.py                        # Flipper core processing logic
 ├── sprite_merger.py                 # Sprite Merger sub-app
+├── folder_sprite_builder.py         # Folder Sprite Builder sub-app
 ├── inset_crop_tool.py               # Inset Crop Tool sub-app
 ├── sprite_splitter.py               # Sprite Splitter sub-app
 ├── remove_pink_background.py        # Color removal tool (standalone use)
@@ -240,6 +258,13 @@ SpriteTool/
 1. **Upload Image** - Select the Sprite Sheet to split.
 2. **Set Grid** - Enter row and column counts; the preview will show blue split lines instantly.
 3. **Download** - Click "Download ZIP" to get all individual cell files.
+
+### Folder Sprite Builder Workflow
+
+1. **Select Folder** - Load all image files from a folder.
+2. **Set Output** - Enter Columns and total width (px).
+3. **Confirm Ordering** - Images are merged in natural filename order (path tie-break if duplicate names exist).
+4. **Export** - Click "Export and Download" to get the merged PNG.
 
 ---
 

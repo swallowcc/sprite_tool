@@ -6,7 +6,7 @@
 
 ## 🎯 功能概述
 
-SpriteTool 是一個整合式的 Web 應用程式，集合了四個專業級工具於一身：
+SpriteTool 是一個整合式的 Web 應用程式，集合多個專業級工具於一身：
 
 ### 📏 Grid Tool（網格工具）
 用於在圖片上定義規則的網格區域並進行批量選取。
@@ -116,6 +116,22 @@ SpriteTool 是一個整合式的 Web 應用程式，集合了四個專業級工�
 
 ---
 
+### 🗂️ Folder Sprite Builder（資料夾合併工具）
+指定資料夾後，將圖片依檔名排序、自動縮放並合併成 Sprite 圖。
+
+**功能特性：**
+- 一次載入整個資料夾內的圖片
+- 輸入 Columns 與總寬度後，自動計算單格寬度
+- 圖片依比例縮放並置中貼入格位
+- 自動換行排版（不足整列時保留最後一列）
+- 輸出順序依檔名自然排序（例如 1, 2, 10）
+- 同名檔案會以相對路徑作為次排序，確保順序穩定
+- 一鍵輸出並下載 PNG
+
+**使用場景：** 批次素材整理、資料夾圖片快速拼表、動畫圖集打包
+
+---
+
 ## 🚀 快速開始
 
 ### 環境需求
@@ -146,6 +162,7 @@ python tool.py
 - **Shiny Maker**: `http://localhost:8000/shiny/`
 - **Sprite Flipper**: `http://localhost:8000/flipper/`
 - **Sprite Merger**: `http://localhost:8000/merger/`
+- **Folder Sprite Builder**: `http://localhost:8000/folder-builder/`
 - **Inset Crop Tool**: `http://localhost:8000/inset/`
 - **Sprite Splitter**: `http://localhost:8000/splitter/`
 
@@ -162,6 +179,7 @@ SpriteTool/
 ├── rotate_webtool.py                # Sprite Flipper 子應用
 ├── rotate.py                        # Flipper 核心處理邏輯
 ├── sprite_merger.py                 # Sprite Merger 子應用
+├── folder_sprite_builder.py         # Folder Sprite Builder 子應用
 ├── inset_crop_tool.py               # Inset Crop Tool 子應用
 ├── sprite_splitter.py               # Sprite Splitter 子應用
 ├── remove_pink_background.py        # 色彩去除工具（獨立使用）
@@ -244,6 +262,13 @@ SpriteTool/
 1. **上傳圖片** - 選擇要分割的 Sprite Sheet
 2. **設定網格** - 輸入行列數，預覽圖會即時顯示藍色分割線
 3. **下載** - 點擊「下載 ZIP」取得所有格子檔案
+
+### Folder Sprite Builder 工作流
+
+1. **選擇資料夾** - 載入資料夾內所有圖片
+2. **設定輸出** - 輸入 Columns 與總寬度（px）
+3. **確認排序** - 系統會依檔名自然排序後合併（同名時以路徑次排序）
+4. **輸出下載** - 點擊「輸出並下載」取得合併後 PNG
 
 ---
 
