@@ -12,6 +12,7 @@ from rotate_webtool import app as flipper_app
 from sprite_merger import app as merger_app
 from inset_crop_tool import app as inset_app
 from sprite_splitter import app as splitter_app
+from folder_sprite_builder import app as folder_builder_app
 
 app = FastAPI(title="Game Dev Suite")
 
@@ -25,6 +26,7 @@ NAVBAR_HTML = """
     <a href="/shiny/" class="text-sm text-slate-300 hover:text-blue-400 transition">✨ Shiny Maker</a>
     <a href="/flipper/" class="text-sm text-slate-300 hover:text-blue-400 transition">🔄 Flipper</a>
     <a href="/merger/" class="text-sm text-slate-300 hover:text-blue-400 transition">🧩 Merger</a>
+    <a href="/folder-builder/" class="text-sm text-slate-300 hover:text-blue-400 transition">🗂️ Folder Builder</a>
     <a href="/inset/" class="text-sm text-slate-300 hover:text-blue-400 transition">✂️ Inset Crop</a>
     <a href="/splitter/" class="text-sm text-slate-300 hover:text-blue-400 transition">📦 Splitter</a>
 </nav>
@@ -58,6 +60,7 @@ app.mount("/picker", picker_app)
 app.mount("/shiny", shiny_app)
 app.mount("/flipper", flipper_app)
 app.mount("/merger", merger_app)
+app.mount("/folder-builder", folder_builder_app)
 app.mount("/inset", inset_app)
 app.mount("/splitter", splitter_app)
 
@@ -81,6 +84,7 @@ async def index():
                 <a href="/shiny/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">✨ Shiny Maker</a>
                 <a href="/flipper/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">🔄 Flipper</a>
                 <a href="/merger/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">🧩 Merger</a>
+                <a href="/folder-builder/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">🗂️ Folder Builder</a>
                 <a href="/inset/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">✂️ Inset Crop</a>
                 <a href="/splitter/" class="p-6 bg-slate-800 rounded-2xl border border-slate-700 text-center hover:border-blue-500 transition block">📦 Splitter</a>
             </div>
