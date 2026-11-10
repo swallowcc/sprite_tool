@@ -37,6 +37,21 @@ SpriteTool 是一個整合式的 Web 應用程式，集合多個專業級工具�
 
 **使用場景：** 角色動畫分解、道具提取、UI 圖片整理
 
+#### 🧱 Cell Picker（格子選取，Picker 的第二種用法）
+從 Picker 頁面右上角切換到「格子選取」（`/picker/cells/`）。
+
+- 設定正方形格子大小（預設 10，代表 10×10 px）
+- Cmd/Ctrl + 點擊選「起始格」與「結束格」（順序可顛倒），選完自動加入清單，可連續選取**多個物件**；也可直接輸入 x1/y1/x2/y2 加入
+- 清單中可為每個物件改名、移除；滑鼠移到清單項目時會在圖上標亮對應範圍
+- **WebP 輸出**：打開開關後圖片改輸出 `.webp`，品質預設 `-q 50`（0–100 可調），JSON 的 `file` 會跟著變成 `.webp`
+- **設定記憶**：格子大小、WebP 開關、品質會存在瀏覽器（localStorage），重新整理後沿用；輸出名稱則每次跟著上傳的檔名
+- 格子座標從 0 起算，**起始格與結束格都包含在內**：`cols = x2 - x1 + 1`、`rows = y2 - y1 + 1`
+- 導出 ZIP，**每個物件各自一張圖 + 一份同名 JSON**（如 `aaa_1.png` + `aaa_1.json`），名稱重複時自動加後綴：
+
+```json
+{ "file": "aaa_1.png", "cols": 6, "rows": 7, "cell": 10, "x1": 10, "y1": 12, "x2": 15, "y2": 18 }
+```
+
 ---
 
 ### ✨ Shiny Monster Maker（色違製作工具）
@@ -175,6 +190,7 @@ SpriteTool/
 ├── tool.py                          # 主應用入口（FastAPI 聚合）
 ├── sprite_tool_fullstack.py         # Grid Tool 子應用
 ├── sprite_webtool.py                # Sprite Picker 子應用
+├── cell_picker.py                   # Cell Picker（掛在 /picker/cells/）
 ├── shiny_maker.py                   # Shiny Monster Maker 子應用
 ├── rotate_webtool.py                # Sprite Flipper 子應用
 ├── rotate.py                        # Flipper 核心處理邏輯
@@ -223,6 +239,7 @@ SpriteTool/
    - 設定 **Saturation Mask** 保護中性色
 3. **實時預覽** - 右側即時顯示效果
 4. **下載** - 滿意後點擊「下載」按鈕
+5. **設定檔** - 輸入名稱並儲存色調設定；設定保存在伺服器的 `shiny_settings.sqlite3`，可重新載入後套用
 
 ### Sprite Flipper 工作流
 
@@ -304,10 +321,13 @@ SpriteTool/
 - `GET /picker/` - 首頁
 - `POST /picker/upload` - 上傳圖片
 - `POST /picker/export` - 導出選中的 Sprite
+- `GET /picker/cells/` - Cell Picker 頁面
+- `POST /picker/cells/export` - 依格子座標擷取多個物件，回傳每個物件圖片（PNG / WebP）+ JSON 的 ZIP
 
 ### Shiny Maker
 - `GET /shiny/` - 首頁
 - `POST /shiny/process` - 處理色違調整
+- `GET /shiny/settings`、`POST /shiny/settings` - 列出與儲存命名設定檔（SQLite）
 - `GET /shiny/download` - 下載成品
 
 ### Sprite Flipper

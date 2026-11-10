@@ -35,6 +35,21 @@ Quickly select and extract individual sprites from complex Sprite Sheets.
 
 **Use Cases:** Character animation decomposition, prop extraction, UI asset organization.
 
+#### 🧱 Cell Picker (second Picker mode)
+Switch to "格子選取" at the top right of the Picker page (`/picker/cells/`).
+
+- Set a square cell size (default 10, i.e. 10×10 px).
+- Cmd/Ctrl + Click the start cell and the end cell (any order); each finished pair is added to the list, so you can pick **multiple objects**. You can also add one by typing x1/y1/x2/y2.
+- Rename or remove each object in the list; hovering a list item highlights its area on the image.
+- **WebP output**: when the toggle is on, images are exported as `.webp` with quality `-q 50` by default (adjustable 0–100); the JSON `file` field follows.
+- **Remembered settings**: cell size, WebP toggle and quality are saved in the browser (localStorage) and restored after a refresh; the output name always follows the uploaded file.
+- Cell coordinates are 0-based and **both start and end cells are included**: `cols = x2 - x1 + 1`, `rows = y2 - y1 + 1`.
+- Exports a ZIP with **one image + one JSON of the same name per object** (e.g. `aaa_1.png` + `aaa_1.json`); duplicate names get a suffix automatically:
+
+```json
+{ "file": "aaa_1.png", "cols": 6, "rows": 7, "cell": 10, "x1": 10, "y1": 12, "x2": 15, "y2": 18 }
+```
+
 ---
 
 ### ✨ Shiny Monster Maker
@@ -171,6 +186,7 @@ SpriteTool/
 ├── tool.py                          # Main entry point (FastAPI aggregation)
 ├── sprite_tool_fullstack.py         # Grid Tool sub-app
 ├── sprite_webtool.py                # Sprite Picker sub-app
+├── cell_picker.py                   # Cell Picker (mounted at /picker/cells/)
 ├── shiny_maker.py                   # Shiny Monster Maker sub-app
 ├── rotate_webtool.py                # Sprite Flipper sub-app
 ├── rotate.py                        # Flipper core processing logic
@@ -219,6 +235,7 @@ SpriteTool/
    - Set **Saturation Mask** to protect neutral colors.
 3. **Real-time Preview** - View the effect instantly on the right.
 4. **Download** - Click "Download" once satisfied.
+5. **Settings Presets** - Name and save tone settings in the server's `shiny_settings.sqlite3` database, then load and apply them later.
 
 ### Sprite Flipper Workflow
 
@@ -300,10 +317,13 @@ SpriteTool/
 - `GET /picker/` - Home page.
 - `POST /picker/upload` - Upload image.
 - `POST /picker/export` - Export selected Sprites.
+- `GET /picker/cells/` - Cell Picker page.
+- `POST /picker/cells/export` - Crop multiple objects by cell coordinates; returns a ZIP with an image (PNG / WebP) + JSON per object.
 
 ### Shiny Maker
 - `GET /shiny/` - Home page.
 - `POST /shiny/process` - Process shiny adjustment.
+- `GET /shiny/settings`, `POST /shiny/settings` - List and save named settings presets in SQLite.
 - `GET /shiny/download` - Download result.
 
 ### Sprite Flipper

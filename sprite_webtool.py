@@ -3,8 +3,10 @@ from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import HTMLResponse, FileResponse
 from PIL import Image
 import io, math, json, os
+from cell_picker import router as cell_picker_router
 
 app = FastAPI()
+app.include_router(cell_picker_router, prefix='/cells')
 BASE = os.getcwd()
 OUTPUT_DIR = os.path.join(BASE, 'output')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -25,8 +27,16 @@ HTML = '''<!DOCTYPE html>
 <body class="bg-slate-900 text-white">
 <div class="max-w-7xl mx-auto p-4 pt-20 space-y-6">
     <header class="border-b border-slate-700 pb-2">
-        <h1 class="text-xl font-bold">🎯 Picker Tool</h1>
-        <p class="text-slate-400 text-sm mt-2">選取並導出單一 Sprite，支援調整尺寸與排列</p>
+        <div class="flex items-end justify-between gap-4">
+            <div>
+                <h1 class="text-xl font-bold">🎯 Picker Tool</h1>
+                <p class="text-slate-400 text-sm mt-2">選取並導出單一 Sprite，支援調整尺寸與排列</p>
+            </div>
+            <div class="flex gap-2 text-sm">
+                <span class="px-3 py-1 rounded-lg bg-blue-600 font-bold">🎯 自由選取</span>
+                <a href="cells/" class="px-3 py-1 rounded-lg border border-slate-600 text-slate-300 hover:border-blue-500">🧱 格子選取</a>
+            </div>
+        </div>
     </header>
     
     <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
