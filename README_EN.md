@@ -41,13 +41,21 @@ Switch to "格子選取" at the top right of the Picker page (`/picker/cells/`).
 - Set a square cell size (default 10, i.e. 10×10 px).
 - Cmd/Ctrl + Click the start cell and the end cell (any order); each finished pair is added to the list, so you can pick **multiple objects**. You can also add one by typing x1/y1/x2/y2.
 - Rename or remove each object in the list; hovering a list item highlights its area on the image.
+- **Edit coordinates directly**: x1/y1/x2/y2 of every object in the list are editable and auto-sorted top-left → bottom-right; out-of-range or non-integer values show a warning and revert.
+- **Pixel offset**: the cell frame stays fixed while the picture inside it moves. Nudge with the ←↑↓→ buttons (1 px per click) or type dx/dy, in any of the four directions (negative allowed); ↺ resets. The frame on the canvas shows the offset result, matching the export and thumbnail. Parts that move out of the frame are cut off and exposed areas are transparent; the cell count does not change.
+- **Single-object editing**: click an object's thumbnail in the list to open an enlarged editor (same pixels as the export):
+  - **Flip horizontally**: mirrors this object's result (applied after the offset)
+  - **Eraser**: turn it on and drag on the image to make small areas transparent; brush size 1–8 px
+  - **Undo (Ctrl+Z)** and **Clear erase**
+  - Close with a click outside or Esc; changes apply immediately to the list thumbnail and the export
+  - Erase marks are stored by position in the output image, so changing the offset later does not move them
 - **WebP output**: when the toggle is on, images are exported as `.webp` with quality `-q 50` by default (adjustable 0–100); the JSON `file` field follows.
 - **Remembered settings**: cell size, WebP toggle and quality are saved in the browser (localStorage) and restored after a refresh; the output name always follows the uploaded file.
 - Cell coordinates are 0-based and **both start and end cells are included**: `cols = x2 - x1 + 1`, `rows = y2 - y1 + 1`.
 - Exports a ZIP with **one image + one JSON of the same name per object** (e.g. `aaa_1.png` + `aaa_1.json`); duplicate names get a suffix automatically:
 
 ```json
-{ "file": "aaa_1.png", "cols": 6, "rows": 7, "cell": 10, "x1": 10, "y1": 12, "x2": 15, "y2": 18 }
+{ "file": "aaa_1.png", "cols": 6, "rows": 7, "cell": 10, "x1": 10, "y1": 12, "x2": 15, "y2": 18, "dx": 0, "dy": 0 }
 ```
 
 ---
