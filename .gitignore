@@ -24,4 +24,5 @@ env/
 venv/
 output/
 shiny_output/
+shiny_settings.sqlite3*
 sprite_output/

@@ -1,16 +1,35 @@
 import traceback
+import json
+import sqlite3
 from fastapi import FastAPI, UploadFile, File, Form, Request
 from fastapi.responses import StreamingResponse, HTMLResponse, FileResponse, JSONResponse
 import cv2
 import numpy as np
 from PIL import Image
 import io, os, base64
-from typing import Optional
+from typing import Optional, Tuple
 
 app = FastAPI()
 BASE = os.getcwd()
 OUTPUT_DIR = os.path.join(BASE, 'shiny_output')
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+DATABASE_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'shiny_settings.sqlite3')
+
+
+def initialize_settings_database():
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute('''
+            CREATE TABLE IF NOT EXISTS shiny_settings (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                name TEXT NOT NULL COLLATE NOCASE UNIQUE,
+                settings_json TEXT NOT NULL,
+                created_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                updated_at TEXT NOT NULL DEFAULT CURRENT_TIMESTAMP
+            )
+        ''')
+
+
+initialize_settings_database()
 
 HTML = '''<!DOCTYPE html>
 <html>
@@ -133,6 +152,20 @@ HTML = '''<!DOCTYPE html>
                     <button type="button" onclick="restoreDefaults()" class="px-4 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm transition-all active:scale-95">還原預設值</button>
                     <button type="button" onclick="downloadImage()" id="btnDownload" class="px-6 py-4 bg-slate-700 hover:bg-slate-600 rounded-xl text-sm hidden">下載</button>
                 </div>
+
+                <div class="space-y-2 border-t border-slate-700 pt-4">
+                    <div class="flex gap-2">
+                        <input id="settingsName" type="text" maxlength="48" placeholder="設定檔名稱，例如：火焰系" aria-label="設定檔名稱" class="min-w-0 flex-1 rounded-lg bg-slate-900 border border-slate-700 px-3 py-3 text-sm text-slate-200 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button type="button" onclick="saveSettings()" class="px-4 py-3 bg-indigo-700 hover:bg-indigo-600 rounded-xl text-sm font-semibold transition-all active:scale-95">儲存</button>
+                    </div>
+                    <div class="flex gap-2">
+                        <select id="savedSettingsSelect" aria-label="選擇已儲存的設定檔" class="min-w-0 flex-1 rounded-lg bg-slate-900 border border-slate-700 px-3 py-3 text-sm text-slate-200 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                            <option value="">選擇已儲存設定</option>
+                        </select>
+                        <button type="button" onclick="loadSettings()" id="btnLoadSettings" disabled class="px-4 py-3 bg-slate-700 hover:bg-slate-600 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl text-sm transition-all active:scale-95">套用</button>
+                    </div>
+                    <p id="settingsStatus" aria-live="polite" class="text-[10px] text-slate-500">設定會儲存在這個瀏覽器；同名儲存會更新原設定。</p>
+                </div>
             </div>
 
             <div class="bg-slate-800 p-6 rounded-2xl flex flex-col items-center justify-center border-2 border-dashed border-slate-700">
@@ -152,6 +185,9 @@ HTML = '''<!DOCTYPE html>
 
         let currentFile = null, timer = null, processRequestId = 0;
         let replacementSample = null;
+        let savedSettings = [];
+        let settingsReady = Promise.resolve();
+        const settingsStorageKey = 'shinyMakerSavedSettingsV1';
 
         function g(id){ return document.getElementById(id); }
 
@@ -217,7 +253,14 @@ HTML = '''<!DOCTYPE html>
             const pixel = context.getImageData(x, y, 1, 1).data;
             const hex = '#' + Array.from(pixel.slice(0, 3), value => value.toString(16).padStart(2, '0')).join('');
 
-            replacementSample = { x, y };
+            replacementSample = {
+                x,
+                y,
+                xRatio: x / Math.max(1, preview.naturalWidth - 1),
+                yRatio: y / Math.max(1, preview.naturalHeight - 1),
+                hex,
+                fromPreset: false
+            };
             g('sourceColorSwatch').style.backgroundColor = hex;
             g('sourceColorHex').textContent = hex;
             processImage();
@@ -247,13 +290,208 @@ HTML = '''<!DOCTYPE html>
             processImage();
         }
 
+        const settingControlIds = [
+            'hueRange', 'satMin', 'satScale', 'valScale', 'tintStrength',
+            'replaceColor', 'replaceMode', 'replaceTolerance', 'regionFeather'
+        ];
+
+        function readLegacySettings() {
+            try {
+                const raw = localStorage.getItem(settingsStorageKey);
+                if (!raw) return [];
+                const saved = JSON.parse(raw);
+                if (saved.version === 2 && Array.isArray(saved.presets)) return saved.presets;
+                if (saved.version === 1 && saved.values) {
+                    return [{ name: '我的設定', values: saved.values, sourceSample: saved.sourceSample || null }];
+                }
+            } catch (e) {
+                return [];
+            }
+            return [];
+        }
+
+        async function migrateLegacySettings() {
+            let legacyPresets = readLegacySettings();
+            if (!legacyPresets.length) return;
+
+            try {
+                const currentResponse = await fetch('settings');
+                if (!currentResponse.ok) return;
+                const remotePresets = await currentResponse.json();
+
+                for (const legacy of legacyPresets) {
+                    const baseName = String(legacy.name || '我的設定').trim() || '我的設定';
+                    const valuesJson = JSON.stringify(legacy.values || {});
+                    const sampleJson = JSON.stringify(legacy.sourceSample || null);
+                    const equivalentExists = remotePresets.some(preset => {
+                        const nameMatches = preset.name === baseName || preset.name.startsWith(`${baseName} (匯入`);
+                        return nameMatches
+                            && JSON.stringify(preset.values || {}) === valuesJson
+                            && JSON.stringify(preset.sourceSample || null) === sampleJson;
+                    });
+                    if (equivalentExists) continue;
+
+                    let name = baseName;
+                    let suffix = 2;
+                    while (remotePresets.some(preset => preset.name.toLocaleLowerCase() === name.toLocaleLowerCase())) {
+                        name = `${baseName} (匯入 ${suffix++})`;
+                    }
+                    const response = await fetch('settings', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            name,
+                            values: legacy.values || {},
+                            sourceSample: legacy.sourceSample || null
+                        })
+                    });
+                    if (!response.ok) return;
+                    remotePresets.push(await response.json());
+                }
+                localStorage.removeItem(settingsStorageKey);
+            } catch (e) {
+                console.warn('Could not migrate browser settings to SQLite.', e);
+            }
+        }
+
+        function populateSettingsList(selectedId = '') {
+            const select = g('savedSettingsSelect');
+            const previousId = String(selectedId || select.value || '');
+            select.replaceChildren(new Option('選擇已儲存設定', ''));
+            savedSettings.forEach(preset => {
+                select.add(new Option(preset.name, String(preset.id)));
+            });
+            select.value = savedSettings.some(preset => String(preset.id) === previousId) ? previousId : '';
+            g('btnLoadSettings').disabled = !select.value;
+        }
+
+        async function refreshSettingsStatus(selectedId = '') {
+            try {
+                await migrateLegacySettings();
+                const response = await fetch('settings');
+                if (!response.ok) throw new Error('Could not load settings from SQLite');
+                savedSettings = await response.json();
+                populateSettingsList(selectedId);
+                g('settingsStatus').textContent = savedSettings.length
+                    ? `SQLite 中有 ${savedSettings.length} 組設定；選擇後可套用。`
+                    : '設定會儲存在這台伺服器的 SQLite 資料庫。';
+            } catch (e) {
+                g('btnLoadSettings').disabled = true;
+                g('settingsStatus').textContent = '無法讀取 SQLite 設定檔，請確認 Shiny Maker 伺服器可用。';
+            }
+        }
+
+        async function saveSettings() {
+            const name = g('settingsName').value.trim();
+            if (!name) {
+                g('settingsStatus').textContent = '請先輸入設定檔名稱。';
+                g('settingsName').focus();
+                return;
+            }
+
+            await settingsReady;
+            const values = {};
+            settingControlIds.forEach(id => { values[id] = g(id).value; });
+            const existing = savedSettings.some(preset =>
+                preset.name.trim().toLocaleLowerCase() === name.toLocaleLowerCase()
+            );
+            const payload = {
+                name,
+                values,
+                sourceSample: replacementSample ? {
+                    hex: replacementSample.hex,
+                    xRatio: replacementSample.xRatio,
+                    yRatio: replacementSample.yRatio
+                } : null
+            };
+
+            try {
+                const response = await fetch('settings', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok) throw new Error(result.message || 'Could not save settings');
+                if (replacementSample) replacementSample.savedForReuse = true;
+                await refreshSettingsStatus(result.id);
+                g('settingsName').value = name;
+                g('settingsStatus').textContent = `已${existing ? '更新' : '儲存'}「${name}」${replacementSample ? '，來源色也會沿用到後續圖片。' : '。'}`;
+            } catch (e) {
+                g('settingsStatus').textContent = '無法儲存設定至 SQLite，請確認 Shiny Maker 伺服器可用。';
+            }
+        }
+
+        function loadSettings() {
+            const preset = savedSettings.find(item => String(item.id) === g('savedSettingsSelect').value);
+            if (!preset || !preset.values) {
+                g('settingsStatus').textContent = '找不到可套用的已記錄設定。';
+                g('btnLoadSettings').disabled = true;
+                return;
+            }
+
+            settingControlIds.forEach(id => {
+                if (preset.values[id] !== undefined) g(id).value = preset.values[id];
+            });
+            hueVal.textContent = hueRange.value;
+            satScaleVal.textContent = satScale.value;
+            valScaleVal.textContent = valScale.value;
+            tintVal.textContent = tintStrength.value;
+            g('replaceColorHex').textContent = replaceColor.value;
+            g('replaceToleranceVal').textContent = replaceTolerance.value;
+            g('regionFeatherVal').textContent = regionFeather.value;
+            replaceMode.value = preset.values.replaceMode === 'region' ? 'region' : 'global';
+            updateReplacementControls();
+
+            const sample = preset.sourceSample;
+            if (sample && /^#[0-9a-f]{6}$/i.test(sample.hex)
+                && Number.isFinite(sample.xRatio) && Number.isFinite(sample.yRatio)) {
+                replacementSample = {
+                    x: null,
+                    y: null,
+                    xRatio: Math.max(0, Math.min(1, sample.xRatio)),
+                    yRatio: Math.max(0, Math.min(1, sample.yRatio)),
+                    hex: sample.hex,
+                    fromPreset: true
+                };
+                g('sourceColorSwatch').style.backgroundColor = sample.hex;
+                g('sourceColorHex').textContent = sample.hex;
+            } else {
+                replacementSample = null;
+                g('sourceColorSwatch').style.backgroundColor = '';
+                g('sourceColorHex').textContent = '尚未取色';
+            }
+
+            g('settingsName').value = preset.name;
+            g('settingsStatus').textContent = `已套用「${preset.name}」${replacementSample ? '與來源色。' : '。'}`;
+            if (timer) clearTimeout(timer);
+            processImage();
+        }
+
+        g('savedSettingsSelect').onchange = () => {
+            const preset = savedSettings.find(item => String(item.id) === g('savedSettingsSelect').value);
+            g('btnLoadSettings').disabled = !preset;
+            if (preset) g('settingsName').value = preset.name;
+        };
+        g('settingsName').onkeydown = (event) => {
+            if (event.key === 'Enter') saveSettings();
+        };
+
         document.getElementById('file').onchange = (e) => {
             currentFile = e.target.files[0];
-            replacementSample = null;
-            g('sourceColorSwatch').style.backgroundColor = '';
-            g('sourceColorHex').textContent = '尚未取色';
+            if (replacementSample && (replacementSample.fromPreset || replacementSample.savedForReuse)) {
+                replacementSample.fromPreset = true;
+                replacementSample.x = null;
+                replacementSample.y = null;
+            } else {
+                replacementSample = null;
+                g('sourceColorSwatch').style.backgroundColor = '';
+                g('sourceColorHex').textContent = '尚未取色';
+            }
             if (currentFile) processImage(); 
         };
+
+        settingsReady = refreshSettingsStatus();
 
         function throttledProcess() {
             if (timer) clearTimeout(timer);
@@ -272,8 +510,11 @@ HTML = '''<!DOCTYPE html>
             
             // --- 新增這一行 ---
             fd.append('tint_strength', tintStrength.value); 
-            fd.append('replace_x', replacementSample ? replacementSample.x : -1);
-            fd.append('replace_y', replacementSample ? replacementSample.y : -1);
+            fd.append('replace_x', replacementSample && Number.isInteger(replacementSample.x) ? replacementSample.x : -1);
+            fd.append('replace_y', replacementSample && Number.isInteger(replacementSample.y) ? replacementSample.y : -1);
+            fd.append('replace_x_ratio', replacementSample ? replacementSample.xRatio : -1);
+            fd.append('replace_y_ratio', replacementSample ? replacementSample.yRatio : -1);
+            fd.append('replace_source_color', replacementSample && replacementSample.fromPreset ? replacementSample.hex : '');
             fd.append('replace_color', replaceColor.value);
             fd.append('replace_mode', replaceMode.value);
             fd.append('replace_tolerance', replaceTolerance.value);
@@ -310,6 +551,69 @@ HTML = '''<!DOCTYPE html>
 def home():
     return HTML
 
+
+@app.get('/settings')
+def list_settings():
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        rows = connection.execute(
+            'SELECT id, name, settings_json, updated_at FROM shiny_settings ORDER BY name COLLATE NOCASE'
+        ).fetchall()
+    settings = []
+    for setting_id, name, settings_json, updated_at in rows:
+        payload = json.loads(settings_json)
+        settings.append({
+            'id': str(setting_id),
+            'name': name,
+            'values': payload.get('values', {}),
+            'sourceSample': payload.get('sourceSample'),
+            'savedAt': updated_at
+        })
+    return settings
+
+
+@app.post('/settings')
+async def save_settings(request: Request):
+    try:
+        body = await request.json()
+    except Exception:
+        return JSONResponse(status_code=400, content={'message': 'Invalid JSON body'})
+
+    if not isinstance(body, dict):
+        return JSONResponse(status_code=400, content={'message': 'Settings must be an object'})
+    name = body.get('name')
+    values = body.get('values')
+    if not isinstance(name, str) or not name.strip() or len(name.strip()) > 48:
+        return JSONResponse(status_code=400, content={'message': 'Name must be between 1 and 48 characters'})
+    if not isinstance(values, dict):
+        return JSONResponse(status_code=400, content={'message': 'Settings values are required'})
+
+    name = name.strip()
+    payload = json.dumps({
+        'values': values,
+        'sourceSample': body.get('sourceSample') if isinstance(body.get('sourceSample'), dict) else None
+    }, ensure_ascii=False)
+    with sqlite3.connect(DATABASE_PATH) as connection:
+        connection.execute('''
+            INSERT INTO shiny_settings (name, settings_json, updated_at)
+            VALUES (?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT(name) DO UPDATE SET
+                settings_json = excluded.settings_json,
+                updated_at = CURRENT_TIMESTAMP
+        ''', (name, payload))
+        row = connection.execute(
+            'SELECT id, name, settings_json, updated_at FROM shiny_settings WHERE name = ?',
+            (name,)
+        ).fetchone()
+
+    saved = json.loads(row[2])
+    return {
+        'id': str(row[0]),
+        'name': row[1],
+        'values': saved.get('values', {}),
+        'sourceSample': saved.get('sourceSample'),
+        'savedAt': row[3]
+    }
+
 @app.middleware("http")
 async def catch_exceptions_middleware(request: Request, call_next):
     try:
@@ -331,24 +635,38 @@ def apply_color_replacement(
     mode: str,
     tolerance: float,
     region_feather: float,
+    source_hex: str = '',
     alpha: Optional[np.ndarray] = None,
 ) -> np.ndarray:
     """Replace colors near the sampled pixel while retaining local shading."""
     height, width = bgr.shape[:2]
-    if not (0 <= x < width and 0 <= y < height):
+    has_seed = 0 <= x < width and 0 <= y < height
+    if not source_hex and not has_seed:
         return bgr
 
-    color_hex = target_hex.strip().lstrip('#')
-    if len(color_hex) != 6:
-        return bgr
-    try:
-        red, green, blue = (int(color_hex[i:i + 2], 16) for i in (0, 2, 4))
-    except ValueError:
+    def parse_hex(hex_value: str) -> Optional[Tuple[int, int, int]]:
+        value = hex_value.strip().lstrip('#')
+        if len(value) != 6:
+            return None
+        try:
+            return tuple(int(value[i:i + 2], 16) for i in (0, 2, 4))
+        except ValueError:
+            return None
+
+    target_rgb = parse_hex(target_hex)
+    source_rgb = parse_hex(source_hex) if source_hex else None
+    if target_rgb is None or (source_hex and source_rgb is None):
         return bgr
 
     # Work in CIELAB so the selection radius tracks perceived color difference.
     lab = cv2.cvtColor(bgr.astype(np.float32) / 255.0, cv2.COLOR_BGR2Lab)
-    source_lab = lab[y, x].copy()
+    if source_rgb is not None:
+        red, green, blue = source_rgb
+        source_bgr = np.array([[[blue, green, red]]], dtype=np.float32) / 255.0
+        source_lab = cv2.cvtColor(source_bgr, cv2.COLOR_BGR2Lab)[0, 0]
+    else:
+        source_lab = lab[y, x].copy()
+    red, green, blue = target_rgb
     target_bgr = np.array([[[blue, green, red]]], dtype=np.float32) / 255.0
     target_lab = cv2.cvtColor(target_bgr, cv2.COLOR_BGR2Lab)[0, 0]
     distance = np.linalg.norm(lab - source_lab, axis=2)
@@ -356,6 +674,14 @@ def apply_color_replacement(
 
     if mode == 'region':
         candidates = (distance <= tolerance).astype(np.uint8)
+        if not has_seed or candidates[y, x] == 0:
+            candidate_y, candidate_x = np.where(candidates > 0)
+            if not len(candidate_x):
+                return bgr
+            seed_x = x if has_seed else width // 2
+            seed_y = y if has_seed else height // 2
+            nearest = np.argmin((candidate_x - seed_x) ** 2 + (candidate_y - seed_y) ** 2)
+            x, y = int(candidate_x[nearest]), int(candidate_y[nearest])
         cv2.floodFill(candidates, None, (x, y), 2, flags=4)
         region = candidates == 2
         if not np.any(region):
@@ -409,6 +735,9 @@ async def process_shiny(
     replace_mode: str = Form('global'),
     replace_tolerance: float = Form(24.0),
     region_feather: float = Form(2.0),
+    replace_source_color: str = Form(''),
+    replace_x_ratio: float = Form(-1.0),
+    replace_y_ratio: float = Form(-1.0),
 ):
     try:
         data = await file.read()
@@ -422,6 +751,10 @@ async def process_shiny(
         else:
             bgr = img
             alpha = None
+
+        if replace_x_ratio >= 0 and replace_y_ratio >= 0:
+            replace_x = int(round(np.clip(replace_x_ratio, 0.0, 1.0) * (bgr.shape[1] - 1)))
+            replace_y = int(round(np.clip(replace_y_ratio, 0.0, 1.0) * (bgr.shape[0] - 1)))
 
         # --- 針對低飽和度怪物的優化處理 ---
         if tint_strength > 0:
@@ -458,7 +791,7 @@ async def process_shiny(
         hsv_new = cv2.merge([h, s, v]).astype(np.uint8)
         res_bgr = cv2.cvtColor(hsv_new, cv2.COLOR_HSV2BGR)
 
-        if replace_x >= 0 and replace_y >= 0:
+        if replace_source_color or (replace_x >= 0 and replace_y >= 0):
             res_bgr = apply_color_replacement(
                 res_bgr,
                 replace_x,
@@ -467,6 +800,7 @@ async def process_shiny(
                 replace_mode,
                 replace_tolerance,
                 region_feather,
+                replace_source_color,
                 alpha,
             )
 
